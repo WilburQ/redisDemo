@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "root",
+    "password": "123456",
+    "database": "redis",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "test": {
+    "username": "root",
+    "password": "123456",
+    "database": "redis",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "your_db_user_prod",
+    "password": "your_db_password_prod",
+    "database": "your_db_name_prod",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  }
+}

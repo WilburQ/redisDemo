@@ -1,25 +1,42 @@
-// routes/leaderboardRoutes.js
 const express = require('express');
 const router = express.Router();
-const client = require('../services/redisClient');
-const { getAllProducts } = require('../services/productService');
+const {
+  likeProduct,
+  getLikes,
+  getLikedUsers
+} = require('../services/likeService');
 
-// 商品访问排行榜接口
-router.get('/', async (req, res) => {
-  const leaderboardKey = 'product_views';
-  const products = getAllProducts();
+// 点赞商品
+router.post('/products/:id/like', async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) {
+    return res.status(400).json({ message: 'userId is required' });
+  }
   try {
-    const top = await client.zRange(leaderboardKey, 0, 9, { REV: true, WITHSCORES: true });
-    const result = [];
-    for (let i = 0; i < top.length; i += 2) {
-      const productId = top[i];
-      const views = parseInt(top[i + 1]);
-      let product = products.find(p => p.id === productId);
-      result.push({ productId, views, product });
-    }
+    const result = await likeProduct(req.params.id, userId);
     res.json(result);
-  } catch (e) {
-    res.status(500).send('Server error');
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// 获取商品点赞数
+router.get('/products/:id/likes', async (req, res) => {
+  try {
+    const likes = await getLikes(req.params.id);
+    res.json(likes);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// 获取点赞某商品的用户列表
+router.get('/products/:id/liked-users', async (req, res) => {
+  try {
+    const users = await getLikedUsers(req.params.id);
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 

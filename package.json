@@ -12,6 +12,9 @@
   "description": "",
   "dependencies": {
     "express": "^5.1.0",
-    "redis": "^5.6.0"
+    "mysql2": "^3.14.1",
+    "node-cron": "^4.2.0",
+    "redis": "^5.6.0",
+    "sequelize": "^6.37.7"
   }
 }
