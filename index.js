@@ -3,8 +3,7 @@ const bodyParser = require('body-parser');
 const db = require('./models');
 const { ready: redisReady } = require('./services/redisClient'); // Import the ready promise
 const { startSync } = require('./services/syncService');
-const productRoutes = require('./routes/productRoutes');
-const likeRoutes = require('./routes/leaderboardRoutes'); 
+const routes = require('./routes');
 
 const app = express();
 const port = 3000;
@@ -12,8 +11,7 @@ const port = 3000;
 app.use(bodyParser.json());
 
 // 注册路由
-app.use('/api', productRoutes);
-app.use('/api', likeRoutes); // Assuming leaderboardRoutes contains like/unlike endpoints
+app.use('/api', routes);
 
 // 初始化数据库并启动服务器
 async function startServer() {
