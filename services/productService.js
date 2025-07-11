@@ -2,9 +2,9 @@ const { client: redisClient } = require('./redisClient');
 const { Product } = require('../models');
 
 const HOT_PRODUCTS_KEY = 'hot_products';
-const PRODUCT_CACHE_TTL = 3600; // Cache for 1 hour
+const PRODUCT_CACHE_TTL = 3600; // 缓存1小时
 
-// Helper to get product details, with caching
+// 辅助函数：通过ID获取产品详情，带缓存
 async function getProductById(id) {
   const cacheKey = `product:${id}`;
   let product = await redisClient.get(cacheKey);
@@ -13,53 +13,53 @@ async function getProductById(id) {
     return JSON.parse(product);
   }
 
-  // Cache miss, get from DB
+  // 缓存未命中，从数据库获取
   product = await Product.findByPk(id);
   if (product) {
-    // Store in cache
+    // 存储到缓存
     await redisClient.set(cacheKey, JSON.stringify(product), 'EX', PRODUCT_CACHE_TTL);
   }
   return product;
 }
 
 
-// Get all products, with fallback to DB
+// 获取所有产品，带数据库回退
 async function getAllProducts() {
-    // For simplicity, we fetch all from DB. In a real app, you'd use pagination.
+    // 为简化起见，我们从数据库获取所有产品。在实际应用中，您会使用分页。
     const products = await Product.findAll();
     return products;
 }
 
-// Get hot products from Redis, with fallback to DB
+// 从Redis获取热门产品，带数据库回退
 async function getHotProducts() {
-  // 1. Try to get from Redis sorted set
+  // 1. 尝试从Redis有序集合中获取
   const productIds = await redisClient.zRange(HOT_PRODUCTS_KEY, 0, 4, 'REV');
 
   if (productIds && productIds.length > 0) {
     const products = await Promise.all(productIds.map(id => getProductById(id)));
-    // Filter out any nulls if a product was deleted but still in hot list
+    // 过滤掉任何空值（如果产品已被删除但仍在热门列表中）
     return products.filter(p => p);
   }
 
-  // 2. Cache miss, get from DB (e.g., top 5 liked products)
-  console.log('Hot products cache miss. Fetching from database...');
+  // 2. 缓存未命中，从数据库获取（例如，点赞数最多的前5个产品）
+  console.log('热门产品缓存未命中。正在从数据库获取...');
   const dbProducts = await Product.findAll({
     order: [['likes', 'DESC']],
     limit: 5
   });
 
-  // 3. Populate Redis cache
+  // 3. 填充Redis缓存
   if (dbProducts && dbProducts.length > 0) {
     const pipeline = redisClient.pipeline();
     for (const p of dbProducts) {
         const productString = JSON.stringify(p.toJSON());
-        // Add to sorted set for ranking
+        // 添加到有序集合以进行排名
         pipeline.zAdd(HOT_PRODUCTS_KEY, { score: p.likes, value: p.id.toString() });
-        // Add to individual cache
+        // 添加到单独缓存
         pipeline.set(`product:${p.id}`, productString, 'EX', PRODUCT_CACHE_TTL);
     }
     await pipeline.exec();
-    console.log('Hot products cache populated from database.');
+    console.log('热门产品缓存已从数据库填充。');
   }
 
   return dbProducts;
